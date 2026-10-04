@@ -29,13 +29,18 @@ Zirah only connects where you tell it to:
 With `--llm`, Zirah sends the provider you chose the text fields of the scanned manifest
 (tool, prompt and resource names, titles, descriptions and schemas, and the server
 instructions) so it can classify them. It does not send the server's command line,
-arguments, environment or your configs. **The manifest text is sent as is**: if a manifest
-contains a secret in a description, that text goes to the provider. Secrets are redacted in
-Zirah's own reports, not in what the judge reads.
+arguments, environment, headers or your configs.
 
-Use `--llm none` (the default) or a local Ollama model when you scan manifests you would not
-share with a cloud provider. API keys are read only from the environment, sent only to the
-matching provider, and never logged or written to reports.
+**Secret values are redacted before anything is sent.** Every value found by the secret rules
+(API keys, tokens, private keys, JWTs, passwords in URLs, secret assignments) is replaced with
+`[REDACTED:<type>]`, for example `[REDACTED:github-token]`. Nothing of the secret is kept: no
+prefix and no length. This happens in the one function every provider uses to send a request,
+and if redaction fails for any reason, nothing is sent. The rest of the manifest text is still
+sent to the provider you chose, so use `--llm none` (the default) or a local Ollama model for
+manifests you would not share with a cloud provider.
+
+API keys for the providers are read only from the environment, sent only to the matching
+provider, and never logged or written to reports.
 
 ## Local files
 

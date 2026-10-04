@@ -9,6 +9,13 @@ Rule pack versions (`YYYY.MM.N`) are recorded in every scan result and noted per
 
 ## [Unreleased]
 
+### Security
+
+- The LLM judge no longer sends secret values to the provider. Every request goes through
+  one redaction step that providers cannot bypass: each value found by the D4 secret rules
+  is replaced with `[REDACTED:<type>]`, and if redaction fails, nothing is sent. MCP config
+  environment values and headers were never sent and still are not.
+
 ### Added
 
 - PRIVACY.md: Zirah collects no data and has no telemetry; with `--llm`, scanned manifest
