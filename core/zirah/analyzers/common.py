@@ -15,7 +15,7 @@ from typing import Any
 
 from zirah.analyzers.base import Analyzer, ScanContext
 from zirah.models import Engine, Evidence, Finding, Manifest, Module, Target
-from zirah.rulepack import Rule, Surface
+from zirah.rulepack import Rule, Surface, secret_spans
 
 CONTEXT_CHARS = 60
 """Characters of surrounding text kept on each side of a match in a finding's snippet."""
@@ -131,9 +131,6 @@ def context_snippet(text: str, start: int, end: int, keep_whole: Sequence[Span] 
 REDACT_KEEP = 4
 """Most characters of a secret shown in evidence; the rest becomes ``****``."""
 
-SECRET_GROUP = re.compile(r"secret(?:_\d+)?")
-"""Regex groups holding the secret itself in a D4 rule; text around them is shown as is."""
-
 
 def redact(value: str) -> str:
     """A short prefix of ``value`` plus ``****``, never more than a quarter of it.
@@ -143,16 +140,6 @@ def redact(value: str) -> str:
     if value.endswith("****"):
         return value
     return value[: min(REDACT_KEEP, len(value) // 4)] + "****"
-
-
-def secret_spans(match: re.Match[str]) -> list[Span]:
-    """Where the secret is in ``match``: its secret groups, or the whole match."""
-    spans = [
-        match.span(name)
-        for name, value in match.groupdict().items()
-        if value is not None and SECRET_GROUP.fullmatch(name)
-    ]
-    return sorted(spans) or [match.span()]
 
 
 def redact_match(match: re.Match[str]) -> str:

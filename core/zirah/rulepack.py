@@ -125,6 +125,20 @@ class Rule(BaseModel):
         return self._pattern.finditer(text)
 
 
+SECRET_GROUP = re.compile(r"secret(?:_\d+)?")
+"""Regex groups holding the secret itself in a D4 rule; text around them is shown as is."""
+
+
+def secret_spans(match: re.Match[str]) -> list[tuple[int, int]]:
+    """Where the secret is in ``match``: its secret groups, or the whole match."""
+    spans = [
+        match.span(name)
+        for name, value in match.groupdict().items()
+        if value is not None and SECRET_GROUP.fullmatch(name)
+    ]
+    return sorted(spans) or [match.span()]
+
+
 def _compile(rule: Rule) -> re.Pattern[str]:
     flags = re.IGNORECASE if rule.ignore_case else 0
     if rule.kind == "llm":

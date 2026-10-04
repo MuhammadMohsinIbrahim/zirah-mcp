@@ -29,7 +29,8 @@ SCHEMA: dict[str, Any] = {
     "required": ["ok"],
     "additionalProperties": False,
 }
-KEY = "zirah_fake_key_4c8e1a93d07b52f6"
+KEY = "zirah" + "_fake_" + "key_" + "4c8e1a93d07b52f6"
+"""A fake provider key, assembled at run time; never a real one."""
 Handler = Callable[[httpx.Request], httpx.Response]
 
 

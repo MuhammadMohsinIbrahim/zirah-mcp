@@ -12,9 +12,9 @@ from collections import Counter
 from collections.abc import Sequence
 
 from zirah.analyzers.base import ScanContext
-from zirah.analyzers.common import RuleAnalyzer, Span, TextField, redact_match, secret_spans
+from zirah.analyzers.common import RuleAnalyzer, Span, TextField, redact_match
 from zirah.models import Finding, Manifest, Module
-from zirah.rulepack import Rule
+from zirah.rulepack import Rule, secret_spans
 
 
 def shannon_entropy(value: str) -> float:

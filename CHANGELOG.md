@@ -9,8 +9,18 @@ Rule pack versions (`YYYY.MM.N`) are recorded in every scan result and noted per
 
 ## [Unreleased]
 
+### Security
+
+- The LLM judge no longer sends secrets matched by zirah's D4 rules to the provider. Every
+  request goes through one redaction step that providers cannot bypass: each such secret is
+  replaced with `[REDACTED:<type>]`, and if redaction fails, nothing is sent. Secrets in
+  formats the D4 rules do not recognize are not redacted. MCP config environment values and
+  headers were never sent and still are not.
+
 ### Added
 
+- PRIVACY.md states that the `ZIRAH_LLM` environment variable can select a cloud provider
+  when `--llm` is not given.
 - PRIVACY.md: Zirah collects no data and has no telemetry; with `--llm`, scanned manifest
   text goes only to the provider you choose.
 - README: a "What `zirah discover` reads" section listing every config file per client.

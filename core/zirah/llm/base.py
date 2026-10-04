@@ -4,16 +4,21 @@ A client sends one system prompt and one user message and gets back JSON text th
 given schema. Temperature is always 0. Requests have a timeout and a response size limit, and
 errors never include request headers or response bodies, so API keys cannot leak into logs or
 reports.
+
+Every request goes through :meth:`LlmClient._post`, which providers cannot override. It
+replaces secret values in the request body with ``[REDACTED:<type>]`` before anything is sent,
+and if that fails, nothing is sent (see :mod:`zirah.llm.redact`).
 """
 
 from __future__ import annotations
 
 import json
 from abc import ABC, abstractmethod
-from typing import Any, ClassVar, Final
+from typing import Any, ClassVar, Final, final
 
 import httpx
 
+from zirah.llm.redact import redact_payload
 from zirah.models import LlmInfo, LlmProvider
 
 TEMPERATURE: Final = 0.0
@@ -69,11 +74,23 @@ class LlmClient(ABC):
         """Send ``system`` and ``user`` and return the model's reply: JSON text meant to match
         ``schema``. Callers must still validate it."""
 
+    @final
     def _post(self, url: str, payload: dict[str, Any], headers: dict[str, str]) -> Any:
-        """POST ``payload`` as JSON and return the decoded JSON response."""
+        """POST ``payload`` as JSON and return the decoded JSON response.
+
+        The one way a provider sends anything. Secret values in ``payload`` are redacted first;
+        if redaction fails for any reason, nothing is sent (fail closed). ``headers`` carry the
+        provider's own API key and are sent as given.
+        """
+        try:
+            body = redact_payload(payload)
+        except Exception:  # fail closed: an unredacted body must never be sent
+            raise LlmError(
+                f"{self.provider}: could not redact secrets from the request; nothing was sent"
+            ) from None
         try:
             with httpx.Client(timeout=self._timeout, transport=self._transport) as client:
-                response = client.post(url, json=payload, headers=headers)
+                response = client.post(url, json=body, headers=headers)
         except httpx.TimeoutException:
             raise LlmError(f"{self.provider}: no response within {self._timeout:g} s") from None
         except httpx.HTTPError as exc:
