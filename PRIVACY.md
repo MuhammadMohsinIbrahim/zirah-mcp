@@ -20,24 +20,32 @@ Zirah only connects where you tell it to:
 | `zirah scan https://…` | The URL you give | Standard MCP requests to list tools, prompts and resources, with a `zirah/<version>` User-Agent. No credentials are sent. |
 | `zirah discover` | Nothing | Nothing. It only reads local config files; see [What `zirah discover` reads](README.md#what-zirah-discover-reads). |
 | `zirah scan --all` | The remote servers in your configs | The same as a URL scan, for each configured remote server. stdio servers run only with `--allow-exec`. |
-| `--llm none` (the default) | Nothing | Nothing. |
-| `--llm ollama[:model]` | Your Ollama server (`OLLAMA_HOST`, default `http://localhost:11434`) | The scanned text described below. |
-| `--llm openai[:model]` / `--llm anthropic[:model]` | Only the provider you chose | The scanned text described below, with the API key from your environment. |
+| `--llm none` (the default when `ZIRAH_LLM` is not set) | Nothing | Nothing. |
+| `--llm ollama[:model]` or `ZIRAH_LLM=ollama[:model]` | Your Ollama server (`OLLAMA_HOST`, default `http://localhost:11434`; it may point to another machine) | The scanned text described below. |
+| `--llm openai[:model]` / `--llm anthropic[:model]`, or the same value in `ZIRAH_LLM` | Only the provider you chose | The scanned text described below, with the API key from your environment. |
 
 ## What the LLM judge sends
 
-With `--llm`, Zirah sends the provider you chose the text fields of the scanned manifest
+**The `ZIRAH_LLM` environment variable selects a provider too.** When `--llm` is not given,
+Zirah uses `ZIRAH_LLM`; if it is set to `openai` or `anthropic`, every scan sends text to that
+cloud provider. Leave it unset (or set it to `none`) to keep scans offline.
+
+With an LLM selected, Zirah sends the provider the text fields of the scanned manifest
 (tool, prompt and resource names, titles, descriptions and schemas, and the server
 instructions) so it can classify them. It does not send the server's command line,
 arguments, environment, headers or your configs.
 
-**Secret values are redacted before anything is sent.** Every value found by the secret rules
-(API keys, tokens, private keys, JWTs, passwords in URLs, secret assignments) is replaced with
-`[REDACTED:<type>]`, for example `[REDACTED:github-token]`. Nothing of the secret is kept: no
-prefix and no length. This happens in the one function every provider uses to send a request,
-and if redaction fails for any reason, nothing is sent. The rest of the manifest text is still
-sent to the provider you chose, so use `--llm none` (the default) or a local Ollama model for
-manifests you would not share with a cloud provider.
+**Secrets matched by zirah's D4 rules are redacted before anything is sent.** Each one is
+replaced with `[REDACTED:<type>]`, for example `[REDACTED:github-token]`; nothing of it is
+kept, no prefix and no length. This happens in the one function every provider uses to send a
+request, and if redaction fails for any reason, nothing is sent.
+
+**Only secrets that match the D4 rules are redacted.** They cover known key and token formats
+(AWS, GitHub, OpenAI, Anthropic, Slack), private keys, JWTs, credentials in URLs and
+high-entropy values assigned to secret-named keys. A secret in any other format is not
+recognized and is sent as part of the manifest text, like everything else that is not
+redacted. Use `--llm none` (the default) or a local Ollama model for manifests you would not
+share with a cloud provider.
 
 API keys for the providers are read only from the environment, sent only to the matching
 provider, and never logged or written to reports.
